@@ -3,17 +3,17 @@
 > ▶️ [Youtube](https://www.youtube.com/watch?v=GgyizgXwXAg) 🌐 [Snippets](https://dotnetplaybook.com/redis-as-a-primary-database/)
 
 
-    Redis is renowned for its speed and use as a cache, but can we use Redis as our primary application database? In this tutorial we find out if we can build a .NET 6 API using Redis as the primary db…
+ Redis is renowned for its speed and use as a cache, but can we use Redis as our primary application database? In this tutorial we find out if we can build a .NET 6 API using Redis as the primary db…
 
 ----------
 
 > # What You’ll Learn
 ### In this step by step tutorial you will learn:
-    - What caching is (we’ll cover theory but will not be implementing)
-    - What Redis is, along with its main data types
-    - How to set up Redis in a Docker container and run the Redis CLI
-    - Approaches for connecting and working with Redis in .NET
-    - Using Redis as our .NET application primary database
+ - What caching is (we’ll cover theory but will not be implementing)
+ - What Redis is, along with its main data types
+ - How to set up Redis in a Docker container and run the Redis CLI
+ - Approaches for connecting and working with Redis in .NET
+ - Using Redis as our .NET application primary database
 
 ----------
 
@@ -22,48 +22,48 @@
 
 **Redis is an open source, in-memory data structure store, used as a database, cache and message broker.**
 
-    A great summary, (and why I didn’t bother attempting my own!), but if you’re anything like me you’re probably not that familiar with Redis working as a database or message broker, (as opposed to a cache which is what it’s know for).
+ A great summary, (and why I didn’t bother attempting my own!), but if you’re anything like me you’re probably not that familiar with Redis working as a database or message broker, (as opposed to a cache which is what it’s know for).
 
-    Today we’re going to focus on **using Redis as Database**, but before we jump to that, lets look at why Redis is such a popular choice for caching…
+ Today we’re going to focus on **using Redis as Database**, but before we jump to that, lets look at why Redis is such a popular choice for caching…
 
 ----------
 
 > ## **What is caching?**
 
 
-    The use-case for caching is simple: caching is employed to make the serving of data faster. That’s it. But how is this achieved? Let’s first look at an example where caching is not used:
+ The use-case for caching is simple: caching is employed to make the serving of data faster. That’s it. But how is this achieved? Let’s first look at an example where caching is not used:
 
 
 ![alt](https://i1.wp.com/dotnetplaybook.com/wp-content/uploads/2021/11/2021-11-23_20-32-15.png?w=679&ssl=1)
 
-    In the above example we see a very simple solution architecture comprising a Client App, an API and a Database. The sequence depicted above is as follows:
+ In the above example we see a very simple solution architecture comprising a Client App, an API and a Database. The sequence depicted above is as follows:
 
-    1. The Client app makes a call to the API to get some data
-    2. The API in turn reaches out to the database (where data is     stored on disk)
-    3. A query is run to fetch the data (let’s say this is a     relational / SQL-based DB)
-    4. Data is returned to the API
-    5. Data is returned to the Client
-    6. Resulting in a total execution time
+ 1. The Client app makes a call to the API to get some data
+ 2. The API in turn reaches out to the database (where data is  stored on disk)
+ 3. A query is run to fetch the data (let’s say this is a  relational / SQL-based DB)
+ 4. Data is returned to the API
+ 5. Data is returned to the Client
+ 6. Resulting in a total execution time
 
 
-    Now you may not see an issue with this, and to be honest in many cases, there is no issue, especially when:
+ Now you may not see an issue with this, and to be honest in many cases, there is no issue, especially when:
 
-    - Solution components are local to each other (non distributed     apps)
-    - Datasets are “small”
-    - Queries are well designed and optimized
-    - Indexes are in place
+ - Solution components are local to each other (non distributed  apps)
+ - Datasets are “small”
+ - Queries are well designed and optimized
+ - Indexes are in place
 
-    However if any or all of the above characteristics are not evident, then we’ll probably see request times reach unacceptable levels especially when viewed in the context of interactive, customer-centirc apps, where near real-time responses can be expected…
+ However if any or all of the above characteristics are not evident, then we’ll probably see request times reach unacceptable levels especially when viewed in the context of interactive, customer-centirc apps, where near real-time responses can be expected…
 > **Adding a Cache**
 
-    This is where caching comes in… Let’s take a look at the same solution and scenario, except this time a cache has been introduced:
+ This is where caching comes in… Let’s take a look at the same solution and scenario, except this time a cache has been introduced:
 
 ![Cache No Hit Sequence](https://i0.wp.com/dotnetplaybook.com/wp-content/uploads/2021/11/2021-11-23_20-56-15.png?w=869&ssl=1)
 
-    Now your first reaction to this is that we have made things worse! As we have:
+ Now your first reaction to this is that we have made things worse! As we have:
 
-    - Added more (unnecessary?) technical complexity to our solution
-    - Increased the total request time! (well not really, see note below)
+ - Added more (unnecessary?) technical complexity to our solution
+ - Increased the total request time! (well not really, see note below)
 
 The scenario executed as follows:
 
@@ -97,48 +97,48 @@ The scenario runs as follows:
 5. Data is returned to the Client
 6. Resulting in a total execution time
 
-    This is effectively the exact same scenario as the first, all that’s changed is the source of the data, in this case an in-memory cache (Redis) which serves the data much faster than its (disk-based) database equivalent.
+ This is effectively the exact same scenario as the first, all that’s changed is the source of the data, in this case an in-memory cache (Redis) which serves the data much faster than its (disk-based) database equivalent.
 
 > **Data expiry**
 
-    There is one further consideration with caching. The fact still remains that the cache is not the primary data source, it’s a temporary source of cached data, so it’s conceivable, (and indeed likely), that the data in the primary data source will be updated at some point, rendering the cached data outdated.
+ There is one further consideration with caching. The fact still remains that the cache is not the primary data source, it’s a temporary source of cached data, so it’s conceivable, (and indeed likely), that the data in the primary data source will be updated at some point, rendering the cached data outdated.
 
 This scenario highlights two things:
 
 1. Caching is probably not that suited to data that changes very frequently
 2. When you do use caching, you should employ some form of expiry / refresh of the cache
 
-    By employing an expiry strategy you help ensure that data served form the cache does not persist past it’s useful “use-by date”. As luck would have it, Redis has the native ability to set an expiry on the data it stores.
+ By employing an expiry strategy you help ensure that data served form the cache does not persist past it’s useful “use-by date”. As luck would have it, Redis has the native ability to set an expiry on the data it stores.
 
-    We’ll leave caching there for now, as it’s not the real point of this article, but I did want to highlight how Redis has been use as a cache and why – basically it’s incredibly fast, (when compared to other databases).
+ We’ll leave caching there for now, as it’s not the real point of this article, but I did want to highlight how Redis has been use as a cache and why – basically it’s incredibly fast, (when compared to other databases).
 
 ----------
 > **Redis as a Primary Database**
 
-    Redis has been incredibly successful as a cache, to such an extent it has become synonymous with caching, and for the most part is the go-to solution when a “distributed” cache is required.
+ Redis has been incredibly successful as a cache, to such an extent it has become synonymous with caching, and for the most part is the go-to solution when a “distributed” cache is required.
 
 >> We term Redis a “distributed” cache is it’s external to the application it serves. This would be in contrast to an internal in-memory cache resident as part of the application, e.g. a cache built with IMemoryCache in .NET
 
-    This success has come at a cost, specifically that most people, (myself included!), didn’t realize that Redis offers much more beyond “just” caching.
+ This success has come at a cost, specifically that most people, (myself included!), didn’t realize that Redis offers much more beyond “just” caching.
 
-    Looking back at our discussion on caching, you’ll observe that for all intents and purposes, scenario 1 and scenario 3 are essentially doing the exact same thing. The only difference is platform we are using. So it begs question: why not just do away with the “database” and replace it completely with Redis as a database?
+ Looking back at our discussion on caching, you’ll observe that for all intents and purposes, scenario 1 and scenario 3 are essentially doing the exact same thing. The only difference is platform we are using. So it begs question: why not just do away with the “database” and replace it completely with Redis as a database?
 
 ---------
 > **Did he just say that?!**
 
-    Probably the single biggest reason most people would put forward as to why we should not use Redis as our primary data source is that Redis is an “in-memory” solution, rendering it useless for persistent data storage. In short, if Redis crashes you’d loose all your data.
+ Probably the single biggest reason most people would put forward as to why we should not use Redis as our primary data source is that Redis is an “in-memory” solution, rendering it useless for persistent data storage. In short, if Redis crashes you’d loose all your data.
 
-    This is completely incorrect.
+ This is completely incorrect.
 
-    Redis offers an number of approaches to persistence, rivaling that of more established players like PostgreSQL. I’m not going to delve into this too much, as the team over at Redis have provided some excellent docs on the subject so you can read all about it yourself. So much for that blocker…
+ Redis offers an number of approaches to persistence, rivaling that of more established players like PostgreSQL. I’m not going to delve into this too much, as the team over at Redis have provided some excellent docs on the subject so you can read all about it yourself. So much for that blocker…
 
 ---------
 
 > **No(t)SQL(Server)**
 
-    For me though the biggest blocker in adopting Redis as my primary database has nothing to do with persistence, (obviously), but everything to do with the fact that its not a SQL-based database, or probably more correctly it’s not a Relational Database Management System (RDBMS).
+ For me though the biggest blocker in adopting Redis as my primary database has nothing to do with persistence, (obviously), but everything to do with the fact that its not a SQL-based database, or probably more correctly it’s not a Relational Database Management System (RDBMS).
 
-    I appreciate that this speaks more to my preference for RDBMS’s, and in particular my **love affair with SQL Server** than anything else, but for me it’s still a blocker… In short Redis doesn’t work the way that I like or am familiar with, but hey, life’s all about trying new things so why don’t we give it a go…
+ I appreciate that this speaks more to my preference for RDBMS’s, and in particular my **love affair with SQL Server** than anything else, but for me it’s still a blocker… In short Redis doesn’t work the way that I like or am familiar with, but hey, life’s all about trying new things so why don’t we give it a go…
 
 -----------
 > **Setting Up Our Project**
@@ -153,31 +153,31 @@ You should see something similar to this:
 
 ![dotnet --version](https://i0.wp.com/dotnetplaybook.com/wp-content/uploads/2021/11/2021-11-24_20-49-01.png?w=396&ssl=1)
 
-    Next we’re going to create our template project for our API, so again at a command prompt, move into your “working directory” and issue the following command to create an webapi template project:
+ Next we’re going to create our template project for our API, so again at a command prompt, move into your “working directory” and issue the following command to create an webapi template project:
 
 ```
 dotnet new webapi -n CacheService
 ```
 
-    Performing a directory listing you should see a folder has been created with the name of our project:
+ Performing a directory listing you should see a folder has been created with the name of our project:
 
 ![Created Project](https://i0.wp.com/dotnetplaybook.com/wp-content/uploads/2021/11/2021-11-25_19-09-55.png?w=615&ssl=1)
 
-    For the rest of this tutorial I’m going to work with VS Code, (you can get a copy here), so if you’re doing the same, at the command prompt type the following to open our project:
+ For the rest of this tutorial I’m going to work with VS Code, (you can get a copy here), so if you’re doing the same, at the command prompt type the following to open our project:
 
 ```
 code CacheService
 ```
 
-    This will open the CacheService project in VS Code.
+ This will open the CacheService project in VS Code.
 
 > **Running Redis**
 
-    Now before we start writing any code I want to get an instance of Redis up and running. There are many ways to achieve this, from using managed cloud offerings, to a local installation, but I’m going to use Docker.
+ Now before we start writing any code I want to get an instance of Redis up and running. There are many ways to achieve this, from using managed cloud offerings, to a local installation, but I’m going to use Docker.
 
-    If you want to follow along with this approach then you’ll need to have Docker installed locally, for Windows and Mac it’s as simple as installing Docker Desktop, for Linux users, you’re so intelligent you don’t need me to tell you how to install Docker.
+ If you want to follow along with this approach then you’ll need to have Docker installed locally, for Windows and Mac it’s as simple as installing Docker Desktop, for Linux users, you’re so intelligent you don’t need me to tell you how to install Docker.
 
-    With Docker installed, open a command line and type the following to ensure it’s up and running correctly:
+ With Docker installed, open a command line and type the following to ensure it’s up and running correctly:
 
 ```
 docker  --version 
@@ -187,20 +187,20 @@ docker  --version
  
 ![docker --version](https://i2.wp.com/dotnetplaybook.com/wp-content/uploads/2021/11/2021-11-24_20-35-57.png?w=473&ssl=1)
 
-    We’re going to use Docker Compose to get our instance up and running as we can easily include the docker-compose file with our CacheService project. So back over in VS Code (or whatever text editor / IDE your using), create a docker-compose.yaml file in the root of the project as shown below:
+ We’re going to use Docker Compose to get our instance up and running as we can easily include the docker-compose file with our CacheService project. So back over in VS Code (or whatever text editor / IDE your using), create a docker-compose.yaml file in the root of the project as shown below:
 
 ![Docker Compose file in our project](https://i1.wp.com/dotnetplaybook.com/wp-content/uploads/2021/11/2021-11-25_19-23-51.png?w=398&ssl=1)
 
-    Open the docker-compose file and add the following mark-up that will allow us to spin up a Redis instance running in a Docker container:
+ Open the docker-compose file and add the following mark-up that will allow us to spin up a Redis instance running in a Docker container:
 
 ```
 version: '3.8'
 services:
   redis:
-    image: redis
-    container_name: redis_cache
-    ports:
-      - "6379:6379"
+ image: redis
+ container_name: redis_cache
+ ports:
+   - "6379:6379"
 ```
 
 This simply:
@@ -218,23 +218,23 @@ docker-compose up -d
 
 >> TIP: If you’re using VS Code you can hold down CTRL and hit the backtick key – the key with the ` character), to open the in-line terminal in VS Code.
 
-    This will start a Docker Container running Redis. If you don’t have the Redis Docker image available locally that will also be pulled down for you:
+ This will start a Docker Container running Redis. If you don’t have the Redis Docker image available locally that will also be pulled down for you:
 
 ![Running Redis in Docker](https://i1.wp.com/dotnetplaybook.com/wp-content/uploads/2021/11/2021-11-25_19-37-23.png?w=714&ssl=1)
 
-    With Redis up an running, let’s spend a little bit of time with the Redis CLI to familiarize ourselves with some simple operations.
+ With Redis up an running, let’s spend a little bit of time with the Redis CLI to familiarize ourselves with some simple operations.
 
 ---------
 
 > **Redis Basics**
 
-    In this section we’ll connect into our Docker container and used the redis-cli tool to issue some commands. Now there is already a great introduction to Redis data types on the Redis site, so I’m not going to go into too much detail in this section as there’s no point duplicating what someone else has already written. We will cover some of the basics here though, and when it comes to coding our solution we’ll introduce some of the more complex data types.
+ In this section we’ll connect into our Docker container and used the redis-cli tool to issue some commands. Now there is already a great introduction to Redis data types on the Redis site, so I’m not going to go into too much detail in this section as there’s no point duplicating what someone else has already written. We will cover some of the basics here though, and when it comes to coding our solution we’ll introduce some of the more complex data types.
 
 -------
 
 > **Connecting in**
 
-    As we’re running our Redis instance in Docker, I’m simply going to attach to that instance and use the redis-cli from inside the container, this avoids having to install any further software on our machine. In order to do this we need to get the container id of our running Redis container, to do so type the following at a command prompt:
+ As we’re running our Redis instance in Docker, I’m simply going to attach to that instance and use the redis-cli from inside the container, this avoids having to install any further software on our machine. In order to do this we need to get the container id of our running Redis container, to do so type the following at a command prompt:
 
 ```
 docker ps
@@ -244,12 +244,12 @@ This lists our running containers, so you should see something like this:
 
 ![Obtaining our container id](https://i1.wp.com/dotnetplaybook.com/wp-content/uploads/2021/11/2021-11-25_19-59-30.png?w=1008&ssl=1)
 
-    Copy the container id then issue the following command to attach to our running container:
+ Copy the container id then issue the following command to attach to our running container:
 
 ```
 docker exec -it <YOUR CONTAINER ID> /bin/bash
 ```
-    Hit enter and you should see something like this:
+ Hit enter and you should see something like this:
 
 Attached terminal
 
@@ -270,8 +270,8 @@ set a key
 
 What we have done here “set” a key / value pair, with:
 
-    key = platform:10001
-    Value = Docker
+ key = platform:10001
+ Value = Docker
 
 We can retrieve the value by passing the key to a get command:
 
@@ -283,8 +283,8 @@ get value
 
 While the other data types in Redis are more complex than this simple string type, they are all basically variations on this theme:
 
-    Set keys and values
-    Get values (using the key)
+ Set keys and values
+ Get values (using the key)
 
 It is this last point that took me a while to get, (no pun intended). What I mean by that is that as SQL user I found it difficult to get my head around the fact that there isn’t really a concept of “querying” in NoSQL databases such as Redis. Retrieval of data is essentially based on the provision of keys (and some other operations such as popping off of lists etc.)
 
@@ -311,13 +311,13 @@ Application Architecture
 
 We’re now finally at the point where we can start to write some code! The steps we are going to follow are:
 
-    Add the required package reference(s)
-    Remove redundant / unnecessary template code
-    Register Redis Connection
-    Create Our Model
-    Create Our Repository
-    Create Our Controller
-    Start experimenting with controller actions
+ Add the required package reference(s)
+ Remove redundant / unnecessary template code
+ Register Redis Connection
+ Create Our Model
+ Create Our Repository
+ Create Our Controller
+ Start experimenting with controller actions
 
 We have a lot to do, so let’s get cracking.
 Code on GitHub
@@ -326,16 +326,16 @@ Add Package References
 
 There is a bit of potential confusion around which package reference to add to your project to enable you to use Redis from within .NET:
 
-    Microsoft.Extensions.Caching.Redis
-    Microsoft.Extensions.Caching.StackExchangeRedis
-    StackExchange.Redis
+ Microsoft.Extensions.Caching.Redis
+ Microsoft.Extensions.Caching.StackExchangeRedis
+ StackExchange.Redis
 
 To cut to the chase #1 is essentially deprecated so don’t use that, so you really have a choice of 2 or 3. Indeed Microsoft.Extensions.Caching.StackExchangeRedis depends on StackExchange.Redis, so what’s the difference?
 
 It boils down to how you want to access and work with Redis, and there you have 2 choices:
 
-    Use IDistibutedCache (a simpler approach, with a less rich feature set)
-    Use IConnectionMultiplexer (a more complex approach, with complete feature set)
+ Use IDistibutedCache (a simpler approach, with a less rich feature set)
+ Use IConnectionMultiplexer (a more complex approach, with complete feature set)
 
 Microsoft.Extensions.Caching.StackExchangeRedis supports both approaches, while at the time of writing StackExchange.Redis only supports IConnectionMultiplexer.
 
@@ -354,12 +354,12 @@ Removing Redundant Template Code
 
 When we created our webapi template project, we got with that some example code that we’re not going to use, so we want to remove the following files:
 
-    WeatherForecast.cs
-    Controllers/WeatherForecastController.cs
+ WeatherForecast.cs
+ Controllers/WeatherForecastController.cs
 
 So please go ahead and remove those by which ever method makes most sense to you.
 
-    TIP: You can right click files and folders from within the VS Code directory explorer and add, rename & delete files and folders as required.
+ TIP: You can right click files and folders from within the VS Code directory explorer and add, rename & delete files and folders as required.
 
 You should end up with a project structure like this, (noting that the Controllers folder is empty):
 
@@ -370,7 +370,7 @@ Not unlike any other database, we need to configure a connection string that con
 
  "ConnectionStrings":
   {
-    "DockerRedisConnection": "127.0.0.1:6379"
+ "DockerRedisConnection": "127.0.0.1:6379"
   }
 
 In the context of the wider file it should look like this, noting the required comma just before the ConnectionStrings attribute:
@@ -387,7 +387,7 @@ If you're not using .NET 6.0 or above, you'll need to place the following code i
 And add the following code just after the “Add services to container” comment:
 
 builder.Services.AddSingleton<IConnectionMultiplexer>(opt => 
-    ConnectionMultiplexer.Connect(builder.Configuration.GetConnectionString("DockerRedisConnection")));
+ ConnectionMultiplexer.Connect(builder.Configuration.GetConnectionString("DockerRedisConnection")));
 
 Your Program.cs file should look like this:
 
@@ -395,10 +395,10 @@ Program.cs File
 
 A few points to note:
 
-    We needed to bring in StackExchange.Redis
-    We need to reference Services (note the capital ‘S’) through our instance of WebApplicationBuilder called “builder“.
-    We need to reference Configuration via our builder instance too.
-    We read in our DockerRedisConnection string configured previously
+ We needed to bring in StackExchange.Redis
+ We need to reference Services (note the capital ‘S’) through our instance of WebApplicationBuilder called “builder“.
+ We need to reference Configuration via our builder instance too.
+ We read in our DockerRedisConnection string configured previously
 
 Points 2 & 3 are really more call-outs for those .NET developers used to earlier versions of the framework, and in particular the use of the Startup class.
 Creating our Model
@@ -407,8 +407,8 @@ We are going to work with a single, super simple Model representing a list of �
 
 In our working project folder, do the following:
 
-    Create a Models folder in the root of our project
-    Into that folder create a file called: Platform.cs
+ Create a Models folder in the root of our project
+ Into that folder create a file called: Platform.cs
 
 When complete your project structure should look like this:
 
@@ -420,14 +420,14 @@ using System.ComponentModel.DataAnnotations;
 
 namespace CacheService.Models
 {
-    public class Platform
-    {
-        [Required]
-        public string Id { get; set; } = $"platform:{Guid.NewGuid().ToString()}";
-        
-        [Required]
-        public string Name { get; set; } = String.Empty;
-    }
+ public class Platform
+ {
+  [Required]
+  public string Id { get; set; } = $"platform:{Guid.NewGuid().ToString()}";
+  
+  [Required]
+  public string Name { get; set; } = String.Empty;
+ }
 }
 
 .NET 6 defaults to warning you about variables that could return a null exception, hence the use of default values for both our properties. You can turn off this behavior by editing your .csproj file and removing the following line of config:
@@ -443,15 +443,15 @@ Creating our Repository
 
 I’m going to define the following methods for our repository, which will closely align to the API endpoints we are going to offer up:
 
-    Create a new Platform
-    Return an individual Platform (based on the Id)
-    Return all Platforms
+ Create a new Platform
+ Return an individual Platform (based on the Id)
+ Return all Platforms
 
 I feel these need no more explaining, so back over in our project create the following:
 
-    A folder in the root of our project called Data
-    A file named IPlatrformRepo.cs (inside the newly created Data folder)
-    A file named RedisPlatformRepo.cs (inside the newly created Data folder)
+ A folder in the root of our project called Data
+ A file named IPlatrformRepo.cs (inside the newly created Data folder)
+ A file named RedisPlatformRepo.cs (inside the newly created Data folder)
 
 When complete your project file structure should mirror the following:
 
@@ -464,12 +464,12 @@ using CacheService.Models;
 
 namespace CacheService.Data
 {
-    public interface IPlatformRepo
-    {
-        void CreatePlatform(Platform plat);
-        Platform? GetPlatformById(string id);
-        IEnumerable<Platform?>? GetAllPlatforms();
-    }
+ public interface IPlatformRepo
+ {
+  void CreatePlatform(Platform plat);
+  Platform? GetPlatformById(string id);
+  IEnumerable<Platform?>? GetAllPlatforms();
+ }
 }
 
 Here we are defining an Interface that we’ll implement in the next section, it simply defines what methods someone using this interface can expect to be implemented.
@@ -479,8 +479,8 @@ This is really the most novel part of our app as this is where we’ll be develo
 
 To begin we’re only going to fully implement the following methods:
 
-    CreatePlatform
-    GetPlatformById
+ CreatePlatform
+ GetPlatformById
 
 We’ll just have GetAllPlatforms throw an exception for now, but we’ll come back to it later…
 
@@ -492,59 +492,59 @@ using StackExchange.Redis;
 
 namespace CacheService.Data
 {
-    public class RedisPlatformRepo : IPlatformRepo
-    {
-        private readonly IConnectionMultiplexer _redis;
+ public class RedisPlatformRepo : IPlatformRepo
+ {
+  private readonly IConnectionMultiplexer _redis;
 
-        public RedisPlatformRepo(IConnectionMultiplexer redis)
-        {
-            _redis = redis;
-        }
+  public RedisPlatformRepo(IConnectionMultiplexer redis)
+  {
+   _redis = redis;
+  }
 
-        public void CreatePlatform(Platform plat)
-        {
-            if (plat == null)
-            {
-                throw new ArgumentOutOfRangeException(nameof(plat));
-            }
+  public void CreatePlatform(Platform plat)
+  {
+   if (plat == null)
+   {
+    throw new ArgumentOutOfRangeException(nameof(plat));
+   }
 
-            var db = _redis.GetDatabase();
+   var db = _redis.GetDatabase();
 
-            var serialPlat = JsonSerializer.Serialize(plat);
+   var serialPlat = JsonSerializer.Serialize(plat);
 
-            db.StringSet(plat.Id, serialPlat);
-        }
+   db.StringSet(plat.Id, serialPlat);
+  }
 
-        public Platform? GetPlatformById(string id)
-        {
-            var db = _redis.GetDatabase();
+  public Platform? GetPlatformById(string id)
+  {
+   var db = _redis.GetDatabase();
 
-            var plat = db.StringGet(id);
+   var plat = db.StringGet(id);
 
-            if (!string.IsNullOrEmpty(plat))
-            {
-                return JsonSerializer.Deserialize<Platform>(plat);
-            }
+   if (!string.IsNullOrEmpty(plat))
+   {
+    return JsonSerializer.Deserialize<Platform>(plat);
+   }
 
-            return null;
-        }
+   return null;
+  }
 
-        public IEnumerable<Platform?>? GetAllPlatforms()
-        {
-            throw new NotImplementedException();
-        }
-    }
+  public IEnumerable<Platform?>? GetAllPlatforms()
+  {
+   throw new NotImplementedException();
+  }
+ }
 }
 
 Let’s take a look at the interesting code sections below:
 
 Repo 1st Cut
 
-    Here we state that our class intends to implement the methods defined in the IPlatformRepo interface.
-    We use constructor dependency injection to inject an instance of our IConnectionMultiplexer into our class (remember we registered this in Program.cs). We also define a readonly field _redis that we assign our injected instance to, we will use this in the rest of our class.
-    In our CreatePlatform method we get an instance of our Redis DB
-    We serialize our platform object (we know it’s not null as we have done this check)
-    Finally we call the StringSet method which equates to the Redis set command we used via the redis-cli at the start of the article. For this we use the Id of the Platform as the Key and the serialized object as the Value.
+ Here we state that our class intends to implement the methods defined in the IPlatformRepo interface.
+ We use constructor dependency injection to inject an instance of our IConnectionMultiplexer into our class (remember we registered this in Program.cs). We also define a readonly field _redis that we assign our injected instance to, we will use this in the rest of our class.
+ In our CreatePlatform method we get an instance of our Redis DB
+ We serialize our platform object (we know it’s not null as we have done this check)
+ Finally we call the StringSet method which equates to the Redis set command we used via the redis-cli at the start of the article. For this we use the Id of the Platform as the Key and the serialized object as the Value.
 
 I’m not going to detail the workings of GetPlatformById as its essentially just CreatePlatform in reverse – I’m sure you can work it out! (Also don’t forget to save your code)
 Registering IPlatformRepo
@@ -572,49 +572,49 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace CacheService.Controllers
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class PlatformsController : ControllerBase
-    {
-        private readonly IPlatformRepo _repository;
+ [Route("api/[controller]")]
+ [ApiController]
+ public class PlatformsController : ControllerBase
+ {
+  private readonly IPlatformRepo _repository;
 
-        public PlatformsController(IPlatformRepo repository)
-        {
-            _repository = repository;
-        }
+  public PlatformsController(IPlatformRepo repository)
+  {
+   _repository = repository;
+  }
 
-        [HttpGet("{id}", Name="GetPlatformById")]
-        public ActionResult<IEnumerable<Platform>> GetPlatformById(string id)
-        {
-            var platform = _repository.GetPlatformById(id);
-            
-            if (platform != null)
-            {
-                return Ok(platform);
-            }
+  [HttpGet("{id}", Name="GetPlatformById")]
+  public ActionResult<IEnumerable<Platform>> GetPlatformById(string id)
+  {
+   var platform = _repository.GetPlatformById(id);
+   
+   if (platform != null)
+   {
+    return Ok(platform);
+   }
 
-            return NotFound();
-        }
+   return NotFound();
+  }
 
-        [HttpPost]
-        public ActionResult <Platform> CreatePlatform(Platform platform)
-        {
-            _repository.CreatePlatform(platform);
+  [HttpPost]
+  public ActionResult <Platform> CreatePlatform(Platform platform)
+  {
+   _repository.CreatePlatform(platform);
 
-            return CreatedAtRoute(nameof(GetPlatformById), new {Id = platform.Id}, platform);
-        }
-    }
+   return CreatedAtRoute(nameof(GetPlatformById), new {Id = platform.Id}, platform);
+  }
+ }
 }
 
 I’ve highlighted the interesting parts of the code below:
 
 Controller Code pt1
 
-    We define the base route for the controller, this equates to: /api/platforms
-    We use constructor dependency injection to obtain an instance of our repository
-    In addition to specifying the the GetPlatformById endpoint responds to a GET request with an additional id parameter in the route, we also name this endpoint as it this is referenced by our CreatePlatform method when it returns the route of the newly created platform resource
-    We are using our platform model as both input and return types for our endpoints. While this will work fine for our example, this is not best practice – see the “Taking a shortcut” box below for more detail
-    As per standard REST practice, when we create a resource we return back a HTTP 201 with the resource in the response, and also as a navigate-able route. If this doesn’t make sense to you I cover this more in the testing section next.
+ We define the base route for the controller, this equates to: /api/platforms
+ We use constructor dependency injection to obtain an instance of our repository
+ In addition to specifying the the GetPlatformById endpoint responds to a GET request with an additional id parameter in the route, we also name this endpoint as it this is referenced by our CreatePlatform method when it returns the route of the newly created platform resource
+ We are using our platform model as both input and return types for our endpoints. While this will work fine for our example, this is not best practice – see the “Taking a shortcut” box below for more detail
+ As per standard REST practice, when we create a resource we return back a HTTP 201 with the resource in the response, and also as a navigate-able route. If this doesn’t make sense to you I cover this more in the testing section next.
 
 Taking a shortcut
 Using 'internal representations' of our data structures (aka models) as inputs and return values to 'external endpoints' is not best practice as you are tying an internal representation to an external contract. This makes changing the internals of your code harder, it may also expose too much of our internals, externally. In this case I would usually use a Data Transfer Object to represent our Platform model externally. You can learn more about this in my full .NET API tutorial on YouTube: https://www.youtube.com/watch?v=fmvcAzHpsk8
@@ -641,12 +641,12 @@ POST Request
 
 Points to note are:
 
-    Make sure you configure this request as a HTTP POST
-    The route to the endpoint is made up of:
-        The Hostname & Port: https://localhost:7284
-        The controller route: api/platforms
-    The body is of type JSON
-    The body contains a simple JSON object specifying the name of our 1st Platform
+ Make sure you configure this request as a HTTP POST
+ The route to the endpoint is made up of:
+  The Hostname & Port: https://localhost:7284
+  The controller route: api/platforms
+ The body is of type JSON
+ The body contains a simple JSON object specifying the name of our 1st Platform
 
 Execute your request and you should get a 201 Created response along with a JSON representation of our newly created resource:
 
@@ -667,8 +667,8 @@ Now construct a 2nd , (GET), request, which should look as follows:
 
 Get a resource
 
-    Ensure the GET verb is selected
-    Append the full key to the end of the route, this will ensure we hit the GetPlatformById endpoint
+ Ensure the GET verb is selected
+ Append the full key to the end of the route, this will ensure we hit the GetPlatformById endpoint
 
 Execute your request and you should get the resource returned:
 
@@ -687,10 +687,10 @@ Connecting into our Redis instance and looking at the data via RDM we see the fo
 
 RDM View 1
 
-    Our key is represented here under “db0”
-    This is a String data type
-    The Value is the complete platform object serialized as JSON (I felt this was the simplest & fastest approach)
-    You can see a list of other “databases” a Redis instance such as ours has 16 of these numbered 0-15 with the “0” being the default.
+ Our key is represented here under “db0”
+ This is a String data type
+ The Value is the complete platform object serialized as JSON (I felt this was the simplest & fastest approach)
+ You can see a list of other “databases” a Redis instance such as ours has 16 of these numbered 0-15 with the “0” being the default.
 
 Let’s add another Platform to the Database by running another call to our API, (I won’t repeat or show the steps for that though). Having done that, and refreshing the view in RDM, we see the following:
 
@@ -717,8 +717,8 @@ Other things I tried,
 
 One other approach I looked at was to update the the CreatePlatform method in the RedisPlatformRepo class to additoinally add our Platform to a Redis Set, (you can read about Redis Sets here). This approach meant:
 
-    The existing GetPlatformById method (and endpoint) would continue to work as before using the string datatype
-    I could now implement the GetAllPlatforms method by returning the Set of all platform objects – btw when I tried this it was super-fast as you’d expect.
+ The existing GetPlatformById method (and endpoint) would continue to work as before using the string datatype
+ I could now implement the GetAllPlatforms method by returning the Set of all platform objects – btw when I tried this it was super-fast as you’d expect.
 
 If you’re intersted this was the code I added to the CreatePlatfom method (note this is not the final solution I landed on so feel free not to try it out!)
 
@@ -732,32 +732,32 @@ If we save and execute another platform create request, (for “Kubernetes”), 
 
 Use of Set
 
-    We now have 3 String Keys (and GetPlatformById will work as before)
-    We have 1 new “Set” Key (called “setplatforms”)
-    The set contains 1 item
+ We now have 3 String Keys (and GetPlatformById will work as before)
+ We have 1 new “Set” Key (called “setplatforms”)
+ The set contains 1 item
 
 And just to be clear, lets do 1 more platform create request, this is what you would get:
 
 add another item to the set
 
-    We have 4 string keys
-    We still only have 1 “Set” key, but it contains 2 items now
+ We have 4 string keys
+ We still only have 1 “Set” key, but it contains 2 items now
 
 The code I implemented for GetAllPlatforms in the RedisPlatformRepo class was, (again I don’t expect you to implement this):
 
 public IEnumerable<Platform?>? GetAllPlatforms()
 {
-    var db = _redis.GetDatabase();
+ var db = _redis.GetDatabase();
 
-    var completeSet = db.SetMembers("setplatforms");
+ var completeSet = db.SetMembers("setplatforms");
 
-    if (completeSet.Length > 0)
-    {
-      var obj = Array.ConvertAll(completeSet, val => JsonSerializer.Deserialize<Platform>(val)).ToList();
-      return obj;
-    }
+ if (completeSet.Length > 0)
+ {
+   var obj = Array.ConvertAll(completeSet, val => JsonSerializer.Deserialize<Platform>(val)).ToList();
+   return obj;
+ }
 
-    return null;
+ return null;
 }
 
 If you do want to have a go at implementing this, you’ll also need to implement the Controller code which we’ll be doing in the next section. As mentioned this was super fast.
@@ -774,17 +774,17 @@ Introducing the Hash
 
 So to clarify the acceptance criteria for my required solution (if I were to adopt Redis as my primary db):
 
-    Returning data needs to be fast
-    I only want to store data using 1 data-type
+ Returning data needs to be fast
+ I only want to store data using 1 data-type
 
 With these criteria defined, I realized that a re-write of the RedisPlatformRepo class was required and that I needed to use a different datatype… Enter the Hash.
 
 Again, Redis have done a great job of documenting their data-types here, so I really recommend you take a quick read of that. To summarize what a hash is though:
 
-    Based on the storage on Field / Value pairs (along with the Key for the Hash it’s self)
-    Suitable for storing “objects”
-    You can get individual Values (based on the Key/Field combination)
-    You can get “all” items in the hash.
+ Based on the storage on Field / Value pairs (along with the Key for the Hash it’s self)
+ Suitable for storing “objects”
+ You can get individual Values (based on the Key/Field combination)
+ You can get “all” items in the hash.
 
 I think at this point we move back to the code, and take a look at the re-written RedisPlatformRepo class, (I have commented out the previous string data-type implementation for reference and comparison):
 
@@ -794,69 +794,69 @@ using StackExchange.Redis;
 
 namespace CacheService.Data
 {
-    public class RedisPlatformRepo : IPlatformRepo
-    {
-        private readonly IConnectionMultiplexer _redis;
+ public class RedisPlatformRepo : IPlatformRepo
+ {
+  private readonly IConnectionMultiplexer _redis;
 
-        public RedisPlatformRepo(IConnectionMultiplexer redis)
-        {
-            _redis = redis;
-        }
+  public RedisPlatformRepo(IConnectionMultiplexer redis)
+  {
+   _redis = redis;
+  }
 
-        public void CreatePlatform(Platform plat)
-        {
-            if (plat == null)
-            {
-                throw new ArgumentOutOfRangeException(nameof(plat));
-            }
+  public void CreatePlatform(Platform plat)
+  {
+   if (plat == null)
+   {
+    throw new ArgumentOutOfRangeException(nameof(plat));
+   }
 
-            var db = _redis.GetDatabase();
+   var db = _redis.GetDatabase();
 
-            var serialPlat = JsonSerializer.Serialize(plat);
+   var serialPlat = JsonSerializer.Serialize(plat);
 
-            //db.StringSet(plat.Id, serialPlat);
-            db.HashSet($"hashplatform", new HashEntry[] {new HashEntry(plat.Id, serialPlat)});
-        }
+   //db.StringSet(plat.Id, serialPlat);
+   db.HashSet($"hashplatform", new HashEntry[] {new HashEntry(plat.Id, serialPlat)});
+  }
 
-        public Platform? GetPlatformById(string id)
-        {
-            var db = _redis.GetDatabase();
+  public Platform? GetPlatformById(string id)
+  {
+   var db = _redis.GetDatabase();
 
-            //var plat = db.StringGet(id);
+   //var plat = db.StringGet(id);
 
-            var plat = db.HashGet("hashplatform", id);
+   var plat = db.HashGet("hashplatform", id);
 
-            if (!string.IsNullOrEmpty(plat))
-            {
-                return JsonSerializer.Deserialize<Platform>(plat);
-            }
-            return null;
-        }
+   if (!string.IsNullOrEmpty(plat))
+   {
+    return JsonSerializer.Deserialize<Platform>(plat);
+   }
+   return null;
+  }
 
-        public IEnumerable<Platform?>? GetAllPlatforms()
-        {
-            var db = _redis.GetDatabase();
+  public IEnumerable<Platform?>? GetAllPlatforms()
+  {
+   var db = _redis.GetDatabase();
 
-            var completeSet = db.HashGetAll("hashplatform");
-            
-            if (completeSet.Length > 0)
-            {
-                var obj = Array.ConvertAll(completeSet, val => JsonSerializer.Deserialize<Platform>(val.Value)).ToList();
-                return obj;   
-            }
-            
-            return null;
-        }
-    }
+   var completeSet = db.HashGetAll("hashplatform");
+   
+   if (completeSet.Length > 0)
+   {
+    var obj = Array.ConvertAll(completeSet, val => JsonSerializer.Deserialize<Platform>(val.Value)).ToList();
+    return obj;   
+   }
+   
+   return null;
+  }
+ }
 }
 
 I’ve highlighted the relevant code below:
 
 New Repo
 
-    We create a new Hash with a Key of “hashplatform” and add a new entry with a Field equal to the platform Id, and a Value equal to the entire platform object
-    When retrieving an individual platform, we use HashGet and supply the key of the Hash (“hashplatform”) and the value of the Field we want (in this case the platform id).
-    The new GetAllPlatforms method makes use of HashGetAll to get all the Values stored in the hash. You can see we just deserialze the Value.
+ We create a new Hash with a Key of “hashplatform” and add a new entry with a Field equal to the platform Id, and a Value equal to the entire platform object
+ When retrieving an individual platform, we use HashGet and supply the key of the Hash (“hashplatform”) and the value of the Field we want (in this case the platform id).
+ The new GetAllPlatforms method makes use of HashGetAll to get all the Values stored in the hash. You can see we just deserialze the Value.
 
 Save the file, before we move on to completing our controller
 Finalizing the Controller
@@ -900,17 +900,17 @@ Let’s execute a call to our CreatePlatform endpoint as we have done before, th
 
 Added hash platform
 
-    We have a Hash-type with a Key of “hashplatform”
-    It’s of type HASH
-    We have 1 entry for our platform
-    The Key (or really Field – think this is incorrectly named in RDM) is the Id of the platform
-    The Value is the entire JSON object
+ We have a Hash-type with a Key of “hashplatform”
+ It’s of type HASH
+ We have 1 entry for our platform
+ The Key (or really Field – think this is incorrectly named in RDM) is the Id of the platform
+ The Value is the entire JSON object
 
 Before we move on let’s add 2 more, this is what it would look like in RDM:
 
 3 Platforms in our hash
 
-    We now have 3 platforms store in our Hash
+ We now have 3 platforms store in our Hash
 
 Returning a Single Platform
 
